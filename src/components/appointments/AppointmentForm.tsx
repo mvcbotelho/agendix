@@ -236,7 +236,7 @@ export function AppointmentForm({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (validateForm()) {
@@ -257,7 +257,6 @@ export function AppointmentForm({
         }))
       }
       
-      console.log('Dados do formulário antes de enviar:', cleanFormData)
       onSubmit(cleanFormData)
     }
   }

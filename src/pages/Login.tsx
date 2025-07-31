@@ -16,7 +16,7 @@ import {
 import { useNavigate } from "react-router-dom"
 import { useAuthContext } from "@/hooks/useAuthContext"
 import { LogoXLarge } from "@/components/Logo"
-import { loginSchema } from "@/types/validation"
+// import { loginSchema } from "@/types/validation"
 
 
 export default function Login() {
@@ -36,7 +36,7 @@ export default function Login() {
 
   const validateForm = () => {
     try {
-      loginSchema.parse({ email, password })
+      // loginSchema.parse({ email, password })
       setErrors({})
       return true
     } catch (error) {

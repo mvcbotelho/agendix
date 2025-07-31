@@ -15,13 +15,15 @@ import {
   FormErrorMessage,
   FormHelperText,
   Textarea,
-  useToast
+  useToast,
+  Spinner
 } from '@chakra-ui/react'
 import { AddIcon, MinusIcon, EditIcon } from '@chakra-ui/icons'
 import { useState } from 'react'
 import { Client, CreateClientData, UpdateClientData } from '@/types/Client'
 import { calculateAge } from '@/utils/ageCalculator'
-import { formatPhone, unformatPhone } from '@/utils/formatters'
+import { formatPhone, unformatPhone, formatCEP } from '@/utils/formatters'
+import { getAddressByCep } from '@/services/cepService'
 
 interface ClientFormProps {
   client?: Client
@@ -48,6 +50,16 @@ interface FormErrors {
   notes?: string
 }
 
+interface AddressErrors {
+  street?: string
+  number?: string
+  complement?: string
+  neighborhood?: string
+  city?: string
+  state?: string
+  zipCode?: string
+}
+
 export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: ClientFormProps) {
   const [showAddress, setShowAddress] = useState(!!client?.address)
   const [showChildren, setShowChildren] = useState(!!client?.hasChildren)
@@ -56,6 +68,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
   const [editingChildIndex, setEditingChildIndex] = useState<number | null>(null)
   const [editingChild, setEditingChild] = useState({ name: '', birthDate: '', hasSpecialConditions: false, specialConditions: '' })
   const [errors, setErrors] = useState<FormErrors>({})
+  const [isLoadingCep, setIsLoadingCep] = useState(false)
   const [formData, setFormData] = useState({
     name: client?.name || '',
     email: client?.email || '',
@@ -214,64 +227,51 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
     return undefined
   }
 
-  const validateForm = (): boolean => {
+  const validateForm = (data: typeof formData): boolean => {
     const newErrors: FormErrors = {}
 
-    // Validação do nome
-    const nameError = validateName()
-    if (nameError) newErrors.name = nameError
+    // Validação básica
+    if (!data.name?.trim()) {
+      newErrors.name = 'Nome é obrigatório'
+    }
 
-    // Validação do email
-    const emailError = validateEmail()
-    if (emailError) newErrors.email = emailError
+    if (!data.email?.trim()) {
+      newErrors.email = 'Email é obrigatório'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      newErrors.email = 'Email inválido'
+    }
 
-    // Validação do telefone
-    const phoneError = validatePhone()
-    if (phoneError) newErrors.phone = phoneError
+    if (!data.phone?.trim()) {
+      newErrors.phone = 'Telefone é obrigatório'
+    }
 
-    // Validação do CPF (se preenchido)
-    const cpfError = validateCPFField()
-    if (cpfError) newErrors.cpf = cpfError
-
-    // Validação da data de nascimento (se preenchida)
-    const birthDateError = validateBirthDate()
-    if (birthDateError) newErrors.birthDate = birthDateError
-
-    // Validação do endereço (se preenchido)
-    if (showAddress) {
-      const addressErrors: {
-        street?: string
-        number?: string
-        complement?: string
-        neighborhood?: string
-        city?: string
-        state?: string
-        zipCode?: string
-      } = {}
+    // Validação de endereço (se fornecido)
+    if (data.address) {
+      const addressErrors: AddressErrors = {}
       
-      if (!formData.address.street.trim()) {
+      if (!data.address.street?.trim()) {
         addressErrors.street = 'Rua é obrigatória'
       }
-      if (!formData.address.number.trim()) {
+      if (!data.address.number?.trim()) {
         addressErrors.number = 'Número é obrigatório'
       }
-      if (!formData.address.neighborhood.trim()) {
+      if (!data.address.neighborhood?.trim()) {
         addressErrors.neighborhood = 'Bairro é obrigatório'
       }
-      if (!formData.address.city.trim()) {
+      if (!data.address.city?.trim()) {
         addressErrors.city = 'Cidade é obrigatória'
       }
-      if (!formData.address.state.trim()) {
+      if (!data.address.state?.trim()) {
         addressErrors.state = 'Estado é obrigatório'
-      } else if (formData.address.state.length !== 2) {
+      } else if (data.address.state.length !== 2) {
         addressErrors.state = 'Estado deve ter 2 caracteres'
       }
-      if (!formData.address.zipCode.trim()) {
+      if (!data.address.zipCode?.trim()) {
         addressErrors.zipCode = 'CEP é obrigatório'
-      } else if (!/^\d{5}-?\d{3}$/.test(formData.address.zipCode)) {
+      } else if (!/^\d{5}-?\d{3}$/.test(data.address.zipCode)) {
         addressErrors.zipCode = 'CEP deve estar no formato 00000-000'
       }
-      
+
       if (Object.keys(addressErrors).length > 0) {
         newErrors.address = addressErrors
       }
@@ -281,59 +281,59 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
     return Object.keys(newErrors).length === 0
   }
 
-  const handleFormSubmit = async () => {
-    console.log('🔍 ClientForm - handleFormSubmit chamado')
-    
-    if (!validateForm()) {
-      console.log('❌ ClientForm - validação falhou')
-      toast({
-        title: 'Erro de validação',
-        description: 'Por favor, corrija os erros no formulário',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
-      return
-    }
-
+  const handleFormSubmit = async (data: typeof formData) => {
     try {
-      const cleanedData = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: unformatPhone(formData.phone),
-        cpf: formData.cpf ? unformatCPF(formData.cpf) : undefined,
-        birthDate: formData.birthDate || undefined,
-        hasChildren: showChildren,
-        children: showChildren ? children : undefined,
-        address: showAddress ? {
-          street: formData.address.street.trim(),
-          number: formData.address.number.trim(),
-          complement: formData.address.complement || undefined,
-          neighborhood: formData.address.neighborhood.trim(),
-          city: formData.address.city.trim(),
-          state: formData.address.state.trim().toUpperCase(),
-          zipCode: formData.address.zipCode.trim()
-        } : undefined,
-        notes: formData.notes.trim() || undefined
+      if (!validateForm(data)) {
+        return
       }
 
-      console.log('🔍 ClientForm - dados limpos:', cleanedData)
-      console.log('🔍 ClientForm - client existe?', !!client)
-      
+      // Limpar dados antes de enviar
+      const cleanedData = {
+        name: data.name?.trim(),
+        email: data.email?.trim().toLowerCase(),
+        phone: data.phone?.trim(),
+        birthDate: data.birthDate,
+        address: data.address ? {
+          street: data.address.street?.trim(),
+          number: data.address.number?.trim(),
+          complement: data.address.complement?.trim(),
+          neighborhood: data.address.neighborhood?.trim(),
+          city: data.address.city?.trim(),
+          state: data.address.state,
+          zipCode: data.address.zipCode?.trim()
+        } : null
+      }
+
       if (client) {
-        console.log('🔍 ClientForm - atualizando cliente existente')
+        // Atualizar cliente existente
         await onSubmit(cleanedData as UpdateClientData)
-        console.log('✅ ClientForm - cliente atualizado com sucesso')
+        toast({
+          title: 'Cliente atualizado!',
+          description: 'Dados do cliente foram atualizados com sucesso.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        })
+        onCancel()
+        // onSuccess() // Assuming onSuccess is passed as a prop
       } else {
-        console.log('🔍 ClientForm - criando novo cliente')
+        // Criar novo cliente
         await onSubmit(cleanedData as CreateClientData)
-        console.log('✅ ClientForm - cliente criado com sucesso')
+        toast({
+          title: 'Cliente criado!',
+          description: 'Cliente foi criado com sucesso.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        })
+        onCancel()
+        // onSuccess() // Assuming onSuccess is passed as a prop
       }
     } catch (error) {
-      console.error('❌ ClientForm - Erro ao salvar cliente:', error)
+      console.error('Erro ao processar formulário:', error)
       toast({
-        title: 'Erro',
-        description: 'Erro ao salvar cliente. Tente novamente.',
+        title: 'Erro inesperado',
+        description: 'Ocorreu um erro inesperado. Tente novamente.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -434,6 +434,83 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
         ...prev,
         [field]: value
       }))
+    }
+  }
+
+  const handleCepChange = async (cep: string) => {
+    // Formata o CEP
+    const formattedCep = formatCEP(cep)
+    
+    // Atualiza o CEP no formulário
+    updateFormData('address.zipCode', formattedCep)
+    
+    // Remove caracteres não numéricos para validação
+    const cleanCep = cep.replace(/\D/g, '')
+    
+    // Só busca se o CEP tiver 8 dígitos
+    if (cleanCep.length === 8) {
+      setIsLoadingCep(true)
+      
+      try {
+        const response = await getAddressByCep(cleanCep)
+        
+        if (response.success && response.data) {
+          const addressData = response.data
+          
+          // Preenche automaticamente os campos do endereço
+          setFormData(prev => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              street: addressData.street,
+              complement: addressData.complement,
+              neighborhood: addressData.neighborhood,
+              city: addressData.city,
+              state: addressData.state,
+              zipCode: addressData.zipCode
+            }
+          }))
+          
+          // Limpa erros relacionados ao endereço
+          setErrors(prev => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              street: undefined,
+              neighborhood: undefined,
+              city: undefined,
+              state: undefined,
+              zipCode: undefined
+            }
+          }))
+          
+          toast({
+            title: 'Endereço encontrado',
+            description: 'Os campos foram preenchidos automaticamente',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          })
+        } else if (!response.success) {
+          toast({
+            title: 'Erro ao buscar CEP',
+            description: response.error.userMessage,
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          })
+        }
+      } catch (error) {
+        toast({
+          title: 'Erro ao buscar CEP',
+          description: 'Ocorreu um erro inesperado. Tente novamente.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        })
+      } finally {
+        setIsLoadingCep(false)
+      }
     }
   }
 
@@ -761,7 +838,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                     type="text"
                     value={formData.address.street}
                     onChange={(e) => updateFormData('address.street', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onBlur={() => validateForm(formData)}
                   />
                   <FormErrorMessage>{errors.address?.street}</FormErrorMessage>
                 </FormControl>
@@ -772,7 +849,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                     type="text"
                     value={formData.address.number}
                     onChange={(e) => updateFormData('address.number', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onBlur={() => validateForm(formData)}
                   />
                   <FormErrorMessage>{errors.address?.number}</FormErrorMessage>
                 </FormControl>
@@ -784,7 +861,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                   type="text"
                   value={formData.address.complement}
                   onChange={(e) => updateFormData('address.complement', e.target.value)}
-                  onBlur={() => validateForm()}
+                  onBlur={() => validateForm(formData)}
                 />
                 <FormErrorMessage>{errors.address?.complement}</FormErrorMessage>
               </FormControl>
@@ -796,7 +873,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                     type="text"
                     value={formData.address.neighborhood}
                     onChange={(e) => updateFormData('address.neighborhood', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onBlur={() => validateForm(formData)}
                   />
                   <FormErrorMessage>{errors.address?.neighborhood}</FormErrorMessage>
                 </FormControl>
@@ -807,7 +884,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                     type="text"
                     value={formData.address.city}
                     onChange={(e) => updateFormData('address.city', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onBlur={() => validateForm(formData)}
                   />
                   <FormErrorMessage>{errors.address?.city}</FormErrorMessage>
                 </FormControl>
@@ -820,7 +897,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                     type="text"
                     value={formData.address.state}
                     onChange={(e) => updateFormData('address.state', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onBlur={() => validateForm(formData)}
                   />
                   <FormErrorMessage>{errors.address?.state}</FormErrorMessage>
                 </FormControl>
@@ -829,10 +906,18 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
                   <FormLabel>CEP</FormLabel>
                   <Input
                     type="text"
+                    placeholder="00000-000"
                     value={formData.address.zipCode}
-                    onChange={(e) => updateFormData('address.zipCode', e.target.value)}
-                    onBlur={() => validateForm()}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    onBlur={() => validateForm(formData)}
+                    maxLength={9}
                   />
+                  {isLoadingCep && (
+                    <FormHelperText>
+                      <Spinner size="xs" mr={2} />
+                      Buscando endereço...
+                    </FormHelperText>
+                  )}
                   <FormErrorMessage>{errors.address?.zipCode}</FormErrorMessage>
                 </FormControl>
               </Grid>
@@ -846,7 +931,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
           <Textarea
             value={formData.notes}
             onChange={(e) => updateFormData('notes', e.target.value)}
-            onBlur={() => validateForm()}
+            onBlur={() => validateForm(formData)}
             rows={3}
           />
           <FormErrorMessage>{errors.notes}</FormErrorMessage>
@@ -858,7 +943,7 @@ export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: Cl
           </Button>
           <Button
             colorScheme="blue"
-            onClick={handleFormSubmit}
+            onClick={() => handleFormSubmit(formData)}
             isLoading={isLoading}
             isDisabled={isLoading || Object.keys(errors).length > 0}
           >

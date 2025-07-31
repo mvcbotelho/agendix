@@ -17,7 +17,6 @@ import { Menu } from '@/components/Menu'
 
 import { getClients, createClient, updateClient, deleteClient } from '@/services/clientService'
 import { isSuccessResponse, isErrorResponse } from '@/types/Error'
-import { config } from '@/lib/config'
 import { useAuthContext } from '@/hooks/useAuthContext'
 
 export default function Clients() {
@@ -31,36 +30,6 @@ export default function Clients() {
   const toast = useToast()
   const { user } = useAuthContext()
 
-  // Teste de configuração do Firebase
-  useEffect(() => {
-    console.log('🔍 Clients - Testando configuração do Firebase:')
-    console.log('🔍 Clients - Firebase config:', {
-      apiKey: config.firebase.apiKey ? '✅ Configurado' : '❌ Não configurado',
-      authDomain: config.firebase.authDomain ? '✅ Configurado' : '❌ Não configurado',
-      projectId: config.firebase.projectId ? '✅ Configurado' : '❌ Não configurado',
-      storageBucket: config.firebase.storageBucket ? '✅ Configurado' : '❌ Não configurado',
-      messagingSenderId: config.firebase.messagingSenderId ? '✅ Configurado' : '❌ Não configurado',
-      appId: config.firebase.appId ? '✅ Configurado' : '❌ Não configurado',
-    })
-    
-    // Teste de conexão com Firebase
-    const testFirebaseConnection = async () => {
-      try {
-        console.log('🔍 Clients - Testando conexão com Firebase...')
-        const result = await getClients()
-        console.log('🔍 Clients - Resultado do teste de conexão:', result)
-        if (isSuccessResponse(result)) {
-          console.log('✅ Clients - Firebase conectado com sucesso!')
-        } else {
-          console.error('❌ Clients - Erro na conexão com Firebase:', result.error)
-        }
-          } catch {
-      console.error('❌ Clients - Erro ao testar conexão com Firebase')
-    }
-    }
-    
-    testFirebaseConnection()
-  }, [])
 
   const loadClients = useCallback(async () => {
     try {
@@ -143,21 +112,13 @@ export default function Clients() {
   }
 
   const handleSubmitClient = async (data: CreateClientData | UpdateClientData) => {
-    console.log('🔍 Clients - handleSubmitClient chamado com dados:', data)
-    console.log('🔍 Clients - selectedClient:', selectedClient)
-    console.log('🔍 Clients - isLoading antes:', isLoading)
     setIsLoading(true)
-    console.log('🔍 Clients - isLoading depois:', true)
     
     try {
       if (selectedClient) {
-        // Atualizar cliente existente
-        console.log('🔍 Clients - atualizando cliente existente:', selectedClient.id)
         const result = await updateClient(selectedClient.id, data)
-        console.log('🔍 Clients - resultado do updateClient:', result)
         
         if (isSuccessResponse(result)) {
-          console.log('✅ Clients - cliente atualizado com sucesso')
           setClients(clients.map(client => 
             client.id === selectedClient.id ? result.data : client
           ))
@@ -182,13 +143,9 @@ export default function Clients() {
           })
         }
       } else {
-        // Criar novo cliente
-        console.log('🔍 Clients - criando novo cliente')
         const result = await createClient(data as CreateClientData, user?.uid)
-        console.log('🔍 Clients - resultado do createClient:', result)
         
         if (isSuccessResponse(result)) {
-          console.log('✅ Clients - cliente criado com sucesso:', result.data)
           setClients([result.data, ...clients])
           
           toast({
@@ -221,7 +178,6 @@ export default function Clients() {
         isClosable: true,
       })
     } finally {
-      console.log('🔍 Clients - finalizando, isLoading:', false)
       setIsLoading(false)
     }
   }

@@ -1,5 +1,6 @@
 export interface Appointment {
   id: string
+  tenantId: string // ID do tenant (clínica) que possui este agendamento
   clientId: string
   clientName: string
   service: string

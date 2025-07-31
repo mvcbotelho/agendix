@@ -19,7 +19,7 @@ import {
 import { ArrowBackIcon, EmailIcon } from "@chakra-ui/icons"
 import { useNavigate } from "react-router-dom"
 import { useAuthContext } from "@/hooks/useAuthContext"
-import { resetPasswordSchema } from "@/types/validation"
+// import { resetPasswordSchema } from "@/types/validation"
 
 
 export default function ForgotPassword() {
@@ -41,7 +41,7 @@ export default function ForgotPassword() {
 
   const validateForm = () => {
     try {
-      resetPasswordSchema.parse({ email })
+      // resetPasswordSchema.parse({ email })
       setErrors({})
       return true
     } catch (error) {

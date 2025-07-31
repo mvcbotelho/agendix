@@ -42,4 +42,23 @@ export function unformatPhone(value: string): string {
 
 export function unformatCPF(value: string): string {
   return value.replace(/\D/g, '')
+}
+
+export function formatCEP(value: string): string {
+  // Remove tudo que não é dígito
+  const numbers = value.replace(/\D/g, '')
+  
+  // Limita a 8 dígitos
+  const limited = numbers.slice(0, 8)
+  
+  // Aplica a formatação
+  if (limited.length <= 5) {
+    return limited
+  } else {
+    return `${limited.slice(0, 5)}-${limited.slice(5)}`
+  }
+}
+
+export function unformatCEP(value: string): string {
+  return value.replace(/\D/g, '')
 } 

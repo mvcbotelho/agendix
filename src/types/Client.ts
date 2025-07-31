@@ -1,5 +1,6 @@
 export interface Client {
   id: string
+  tenantId: string // ID do tenant (clínica) que possui este cliente
   name: string
   email: string
   phone: string
