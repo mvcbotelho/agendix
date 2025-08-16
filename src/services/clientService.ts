@@ -28,7 +28,20 @@ import {
 
 const COLLECTION_NAME = 'clients'
 
-// Converter dados do Firestore para Client
+/**
+ * Converts a Firestore DocumentSnapshot into a Client domain object.
+ *
+ * Returns a Client built from the document fields, applying sensible defaults:
+ * - `tenantId` defaults to an empty string when absent.
+ * - Optional fields (cpf, birthDate, address, notes) are undefined when missing.
+ * - `hasChildren` defaults to `false`; `children` defaults to an empty array.
+ * - `createdAt` and `updatedAt` are converted to ISO strings when provided as Timestamps
+ *   or strings; otherwise they default to the current time.
+ *
+ * @param doc - Firestore DocumentSnapshot to convert
+ * @returns The corresponding Client object
+ * @throws Error if the snapshot contains no data
+ */
 function firestoreToClient(doc: DocumentSnapshot<DocumentData>): Client {
   const data = doc.data()
   if (!data) {
@@ -52,7 +65,19 @@ function firestoreToClient(doc: DocumentSnapshot<DocumentData>): Client {
   }
 }
 
-// Converter Client para dados do Firestore
+/**
+ * Build a Firestore-ready plain object from client input data.
+ *
+ * Converts a CreateClientData or UpdateClientData into a Record suitable for Firestore writes.
+ * Always sets `name`, `email`, `phone`, and `updatedAt` (as `serverTimestamp()`).
+ * Optional fields (`cpf`, `birthDate`, `hasChildren`, `children`, `address`, `notes`) are included only if defined on the input.
+ * When provided, `userId` and `tenantId` are added to the record (used for creation/ownership/tenant scoping).
+ *
+ * @param client - Partial client payload; any properties that are `undefined` are omitted from the resulting record.
+ * @param userId - Optional user identifier to attach to the stored record.
+ * @param tenantId - Optional tenant identifier to attach to the stored record.
+ * @returns A plain object ready to be written to Firestore.
+ */
 function clientToFirestore(client: CreateClientData | UpdateClientData, userId?: string, tenantId?: string): Record<string, unknown> {
   const data: Record<string, unknown> = {
     name: client.name,
@@ -80,7 +105,18 @@ function clientToFirestore(client: CreateClientData | UpdateClientData, userId?:
   return data
 }
 
-// Validar dados do cliente
+/**
+ * Validate client input data and throw a validation error for invalid fields.
+ *
+ * Performs these checks on provided fields (only when present):
+ * - `name`: must be at least 2 characters (after trimming).
+ * - `email`: must match a basic email pattern.
+ * - `phone`: digits-only length must be at least 10.
+ * - `cpf`: digits-only length must be exactly 11.
+ *
+ * @param data - Partial client payload to validate (create or update).
+ * @throws ValidationError - Thrown via `createValidationError` when a field is invalid; the error's field key corresponds to the invalid property (`name`, `email`, `phone`, or `cpf`).
+ */
 function validateClientData(data: CreateClientData | UpdateClientData): void {
   if (data.name && data.name.trim().length < 2) {
     throw createValidationError('Nome deve ter pelo menos 2 caracteres', 'name')
@@ -99,7 +135,20 @@ function validateClientData(data: CreateClientData | UpdateClientData): void {
   }
 }
 
-// Buscar todos os clientes
+/**
+ * Retrieve clients from Firestore, optionally filtered by user and/or tenant.
+ *
+ * If both `tenantId` and `userId` are provided, returns clients matching both.
+ * If only `tenantId` is provided, returns clients for that tenant.
+ * If only `userId` is provided, returns clients for that user.
+ * If neither is provided, returns all clients (admin view).
+ *
+ * Results are returned sorted by `createdAt` (most recent first).
+ *
+ * @param userId - Optional user ID to filter clients by owner.
+ * @param tenantId - Optional tenant ID to filter clients; when present, tenant filtering takes precedence and may be combined with `userId`.
+ * @returns An ApiResponse containing the list of matched Client objects (sorted by createdAt) on success, or an ErrorResponse on failure.
+ */
 export async function getClients(userId?: string, tenantId?: string): Promise<ApiResponse<Client[]>> {
   try {
     let q
@@ -162,7 +211,18 @@ export async function getClients(userId?: string, tenantId?: string): Promise<Ap
   }
 }
 
-// Buscar cliente por ID
+/**
+ * Retrieve a client by its Firestore document ID.
+ *
+ * Validates that `id` is non-empty, fetches the document from the `clients`
+ * collection, and converts it to a `Client` object. Returns a `SuccessResponse`
+ * containing the client when found, a `NotFound` `ErrorResponse` when no document
+ * exists for the given `id`, or an `ErrorResponse` with a validation or internal
+ * error on failure.
+ *
+ * @param id - The Firestore document ID of the client (must be non-empty)
+ * @returns An ApiResponse containing the found `Client` on success or an `AppError` on failure
+ */
 export async function getClient(id: string): Promise<ApiResponse<Client>> {
   try {
     if (!id || id.trim().length === 0) {
@@ -207,7 +267,17 @@ export async function getClient(id: string): Promise<ApiResponse<Client>> {
   }
 }
 
-// Criar novo cliente
+/**
+ * Create a new client record in Firestore.
+ *
+ * Validates the provided client data, writes a Firestore document including an automatic `createdAt`
+ * timestamp and optional `userId`/`tenantId` associations, then returns the created Client (including its generated ID).
+ *
+ * @param clientData - The client fields to create (name, email, phone, and optional fields).
+ * @param userId - Optional user ID to associate the client with an owner/account.
+ * @param tenantId - Optional tenant ID to associate the client for multi-tenant scoping.
+ * @returns An ApiResponse containing the created Client on success, or an ErrorResponse with an AppError (validation or internal) on failure.
+ */
 export async function createClient(clientData: CreateClientData, userId?: string, tenantId?: string): Promise<ApiResponse<Client>> {
   try {
     // Validar dados

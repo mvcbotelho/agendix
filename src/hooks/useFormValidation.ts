@@ -13,6 +13,24 @@ interface UseFormValidationReturn {
   setFieldError: (field: string, error: string) => void
 }
 
+/**
+ * Hook that manages Zod-driven form validation and a map of field-specific error messages.
+ *
+ * Provides helpers to validate a single field or an entire form against supplied Zod schemas,
+ * and exposes functions to clear or programmatically set field errors.
+ *
+ * - validateField(field, value, schema): validates a single value with `schema`. Returns the error message for the field or `null` if valid; updates the internal error map.
+ * - validateForm(data, schema): validates `data` with `schema`. Returns `true` if valid (and clears errors) or `false` on validation failure (and populates the error map).
+ * - clearErrors(): clears all field errors.
+ * - setFieldError(field, error): sets or replaces the error message for `field`.
+ *
+ * @returns An object containing:
+ * - `errors`: a map of field paths to error messages.
+ * - `validateField`: (field: string, value: any, schema: z.ZodSchema) => string | null
+ * - `validateForm`: (data: any, schema: z.ZodSchema) => boolean
+ * - `clearErrors`: () => void
+ * - `setFieldError`: (field: string, error: string) => void
+ */
 export function useFormValidation(): UseFormValidationReturn {
   const [errors, setErrors] = useState<ValidationError>({})
 

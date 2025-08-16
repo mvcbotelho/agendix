@@ -56,6 +56,19 @@ interface UserWithPermissions {
   displayName?: string
 }
 
+/**
+ * Tenant users management page — displays, edits and invites users for the current tenant.
+ *
+ * Renders a permission-guarded UI that lists tenant users (merged with Firebase Auth info),
+ * provides an invite flow, and supports editing roles/permissions and removing users.
+ *
+ * Side effects:
+ * - Fetches tenant users and enriches them with Firebase Auth data when `tenantId` becomes available.
+ * - Persists permission changes and deletions via backend services and updates the local list on success.
+ * - Synchronizes available permissions when the selected role changes.
+ *
+ * @returns The Users page component as JSX.
+ */
 export default function Users() {
   const [users, setUsers] = useState<UserWithPermissions[]>([])
   const [isLoading, setIsLoading] = useState(true)

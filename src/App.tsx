@@ -1,5 +1,3 @@
-
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { ChakraProvider } from '@chakra-ui/react'
 import { AuthProvider } from '@/contexts/AuthContext'
@@ -16,6 +14,15 @@ import AdminDashboard from '@/pages/AdminDashboard'
 import Users from '@/pages/Users'
 import DebugPermissions from '@/pages/DebugPermissions'
 
+/**
+ * Root React component that configures providers and client-side routes.
+ *
+ * Wraps the app in an ErrorBoundary, ChakraProvider (theme), and AuthProvider, then defines routes
+ * inside a BrowserRouter. Exposes public routes (/, /forgot-password, /tenant-registration) and
+ * protected application routes under /app, /app/clients, /app/appointments, /admin, /users, and
+ * /debug-permissions. Protected routes are enforced via ProtectedRoute and may require authentication,
+ * admin access, or specific Permission enum values (e.g., CLIENTS_VIEW, APPOINTMENTS_VIEW, USERS_VIEW).
+ */
 export default function App() {
   return (
     <ErrorBoundary>

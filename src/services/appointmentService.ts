@@ -48,7 +48,14 @@ const DEFAULT_PROFESSIONALS: Professional[] = [
   { id: '2', name: 'Maria Santos', specialties: ['Hidratação', 'Coloração'], isActive: true },
 ]
 
-// Buscar todos os agendamentos
+/**
+ * Retrieve appointments, optionally filtered, and return them sorted by date (descending) then time (ascending).
+ *
+ * Supports filtering by `date`, `clientId`, `professionalId`, `status`, and `service`. Results are returned as an ApiResponse carrying an array of Appointment objects (each includes its Firestore `id`). On failure returns an ApiResponse with an internal error.
+ *
+ * @param filters - Optional filter object with any of: `date`, `clientId`, `professionalId`, `status`, `service`.
+ * @returns ApiResponse containing the matching appointments sorted by date/time, or an error on failure.
+ */
 export async function getAppointments(filters?: AppointmentFilters): Promise<ApiResponse<Appointment[]>> {
   try {
     const appointmentsRef = collection(db, 'appointments')
@@ -107,7 +114,14 @@ export async function getAppointments(filters?: AppointmentFilters): Promise<Api
   }
 }
 
-// Buscar agendamento por ID
+/**
+ * Retrieve a single appointment by its ID.
+ *
+ * Attempts to load the appointment document with the given `id` and returns it wrapped in an ApiResponse.
+ *
+ * @param id - The appointment document ID to fetch.
+ * @returns An ApiResponse containing the Appointment when found; returns a NotFound error response if no document exists with the given `id`, or an Internal error response if an unexpected failure occurs.
+ */
 export async function getAppointment(id: string): Promise<ApiResponse<Appointment>> {
   try {
     const appointmentRef = doc(db, 'appointments', id)
@@ -133,7 +147,18 @@ export async function getAppointment(id: string): Promise<ApiResponse<Appointmen
   }
 }
 
-// Função para limpar dados removendo valores undefined
+/**
+ * Remove undefined/null entries and normalize optional fields in appointment data.
+ *
+ * Cleans a nested appointment-like object by:
+ * - Returning an empty object for undefined or null input.
+ * - Omitting properties whose value is `undefined`.
+ * - Converting `null` for optional string fields (`observations`, `professionalName`, `professionalId`) to empty strings.
+ * - Removing `null`/`undefined` items from arrays and omitting arrays that become empty.
+ * - Recursively cleaning nested objects and omitting them if they become empty.
+ *
+ * @param data - The input object to sanitize (typically partial appointment data).
+ * @returns A sanitized object safe to store/update in Firestore.
 function cleanAppointmentData(data: any): any {
   if (data === undefined || data === null) {
     return {}
@@ -180,7 +205,15 @@ function cleanAppointmentData(data: any): any {
   return cleaned
 }
 
-// Criar novo agendamento
+/**
+ * Create a new appointment after validating for scheduling conflicts and normalizing attendee data.
+ *
+ * Checks for existing appointment conflicts for the requested date/time; if any conflict is found the function returns an internal error. It normalizes and sanitizes attendingClients and attendingChildren into guaranteed arrays, sets the appointment status to `scheduled`, attaches server timestamps and the creating user's id, and persists the appointment to Firestore.
+ *
+ * @param data - The appointment payload (date, time, service, professional, attendees, etc.)
+ * @param userId - Id of the user creating the appointment
+ * @returns An ApiResponse containing the created Appointment on success, or an ApiError (internal error with conflict message or a generic internal error) on failure
+ */
 export async function createAppointment(data: CreateAppointmentData, userId: string): Promise<ApiResponse<Appointment>> {
   try {
     // Verificar conflitos
@@ -267,7 +300,15 @@ export async function createAppointment(data: CreateAppointmentData, userId: str
   }
 }
 
-// Atualizar agendamento
+/**
+ * Updates an existing appointment by ID.
+ *
+ * Validates scheduling conflicts when date, time, or professionalId are changed; if a conflict is detected, the function returns a failed response containing the conflict message. Sanitizes attendee arrays (clients and children), sets `updatedAt` to a server timestamp, applies the cleaned update to the Firestore document, and returns the updated appointment on success.
+ *
+ * @param id - The appointment document ID to update.
+ * @param data - Partial appointment fields to update.
+ * @returns ApiResponse with the updated Appointment on success, or an error response (including conflict errors surfaced as internal errors).
+ */
 export async function updateAppointment(id: string, data: UpdateAppointmentData): Promise<ApiResponse<Appointment>> {
   try {
     const appointmentRef = doc(db, 'appointments', id)
@@ -339,7 +380,12 @@ export async function updateAppointment(id: string, data: UpdateAppointmentData)
   }
 }
 
-// Excluir agendamento
+/**
+ * Delete an appointment by its document ID.
+ *
+ * @param id - The appointment document ID to delete.
+ * @returns An ApiResponse<void>. On success `success` is true and `data` is undefined; on failure `success` is false and `error` contains an internal error describing the failure.
+ */
 export async function deleteAppointment(id: string): Promise<ApiResponse<void>> {
   try {
     await deleteDoc(doc(db, 'appointments', id))
@@ -356,7 +402,18 @@ export async function deleteAppointment(id: string): Promise<ApiResponse<void>> 
   }
 }
 
-// Verificar conflitos de agendamento
+/**
+ * Check for scheduling conflicts against existing appointments on the same date.
+ *
+ * Queries appointments with status "scheduled" or "in_progress" for the provided date
+ * (and for the same professional if `data.professionalId` is present) and returns any
+ * found conflicts where time intervals overlap.
+ *
+ * @param data - Appointment data to check (must include `date`, `time`, and `duration`)
+ * @param excludeId - Optional appointment ID to ignore (useful when validating updates)
+ * @returns An array of AppointmentConflict objects describing each detected conflict.
+ *          If an internal error occurs while querying, an empty array is returned.
+ */
 async function checkAppointmentConflicts(
   data: CreateAppointmentData | UpdateAppointmentData, 
   excludeId?: string
@@ -419,7 +476,14 @@ function parseTimeToMinutes(time: string): number {
   return hours * 60 + minutes
 }
 
-// Buscar serviços
+/**
+ * Retrieve the list of available services.
+ *
+ * Returns the in-memory default service definitions. Currently uses DEFAULT_SERVICES
+ * (no external data source); intended to be replaced by a persistent store in the future.
+ *
+ * @returns ApiResponse containing an array of Service objects on success, or an internal error on failure.
+ */
 export async function getServices(): Promise<ApiResponse<Service[]>> {
   try {
     // Por enquanto, retornar serviços padrão
@@ -437,7 +501,14 @@ export async function getServices(): Promise<ApiResponse<Service[]>> {
   }
 }
 
-// Buscar profissionais
+/**
+ * Retrieves the list of professionals.
+ *
+ * Returns a standardized ApiResponse containing an array of Professional objects.
+ * Currently returns an in-memory default list (DEFAULT_PROFESSIONALS); in the future this may be backed by a database.
+ *
+ * @returns An ApiResponse whose `data` field is the array of professionals when `success` is true, or an internal error when `success` is false.
+ */
 export async function getProfessionals(): Promise<ApiResponse<Professional[]>> {
   try {
     // Por enquanto, retornar profissionais padrão
@@ -455,7 +526,15 @@ export async function getProfessionals(): Promise<ApiResponse<Professional[]>> {
   }
 }
 
-// Gerar horários disponíveis para uma data
+/**
+ * Returns 30-minute time slots for a given date, optionally filtered by professional, marking which slots are occupied.
+ *
+ * Generates slots from 08:00 to 17:30 (inclusive start at 08:00, last slot at 17:30) and marks each slot as available unless an existing appointment on the same date (and professional, when provided) has the exact same time. Each TimeSlot includes the slot `time`, `isAvailable`, and the matching `appointment` when present.
+ *
+ * @param date - Date string in `YYYY-MM-DD` format to generate slots for.
+ * @param professionalId - Optional professional ID to restrict occupied slots to that professional.
+ * @returns An ApiResponse whose `data` is an array of TimeSlot objects on success; on failure returns an ApiResponse with an internal error describing the failure to fetch available time slots.
+ */
 export async function getAvailableTimeSlots(
   date: string, 
   professionalId?: string

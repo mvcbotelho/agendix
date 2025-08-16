@@ -20,6 +20,20 @@ import { isSuccessResponse, isErrorResponse } from '@/types/Error'
 import { useAuthContext } from '@/hooks/useAuthContext'
 import { useTenant } from '@/hooks/useTenant'
 
+/**
+ * Page component that manages and displays the tenant-scoped list of clients.
+ *
+ * Renders the client list and provides handlers for loading, creating, updating,
+ * viewing, and deleting clients. Handles modal state for the client form (add/edit)
+ * and a details modal, shows success/error toasts for API operations, and loads
+ * clients for the current user and tenant on mount (and when tenant changes).
+ *
+ * The component coordinates API calls (getClients, createClient, updateClient, deleteClient),
+ * updates local state (`clients`, `selectedClient`, `clientToView`), and exposes UI
+ * actions to the ClientList, ClientForm, and ClientDetailsModal children.
+ *
+ * @returns A React element containing the clients management UI.
+ */
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClient, setSelectedClient] = useState<Client | undefined>()

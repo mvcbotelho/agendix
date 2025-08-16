@@ -60,6 +60,21 @@ interface AddressErrors {
   zipCode?: string
 }
 
+/**
+ * Render a client create/edit form with validation, CEP-based address autofill and child management.
+ *
+ * Renders a full form for creating or updating a client. Features:
+ * - Field-level and form-level validation (name, email, phone, CPF, birth dates, and optional address).
+ * - CEP (zip code) lookup that auto-fills address fields when a valid CEP is entered.
+ * - Add, edit and remove children with birth date validation and optional special conditions.
+ * - Cleans and normalizes data before submission and shows success/error toasts.
+ *
+ * @param client - Optional existing client to populate the form for editing. When provided, the form operates in "edit" mode.
+ * @param onSubmit - Called with cleaned data on successful submit. Receives either CreateClientData (new client) or UpdateClientData (existing client).
+ * @param onCancel - Called to abort/close the form. Also invoked after a successful create/update.
+ * @param isLoading - When true, submit and cancel actions are disabled and submit shows a loading state.
+ * @returns The rendered React component for the client form.
+ */
 export function ClientForm({ client, onSubmit, onCancel, isLoading = false }: ClientFormProps) {
   const [showAddress, setShowAddress] = useState(!!client?.address)
   const [showChildren, setShowChildren] = useState(!!client?.hasChildren)

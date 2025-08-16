@@ -30,6 +30,17 @@ interface MenuProps {
   children: React.ReactNode
 }
 
+/**
+ * Responsive top navigation wrapper that renders a header with navigation links, user menu and a content area.
+ *
+ * Renders a responsive top bar with primary navigation (Dashboard, Clientes, Agendamentos), admin links (Painel Admin, Usuários),
+ * a color mode toggle, and an account menu with logout. On small screens the navigation collapses into a mobile menu.
+ * The component uses authentication state to display the user's avatar and performs logout via the provided auth hook,
+ * showing success/error toasts and navigating to the root on successful logout.
+ *
+ * @param children - Page content rendered below the header.
+ * @returns The Menu component's JSX tree.
+ */
 export function Menu({ children }: MenuProps) {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { colorMode, toggleColorMode } = useColorMode()
