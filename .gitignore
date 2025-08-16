@@ -7,7 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+.pnpm-store/
+
+# Build outputs
 dist
 dist-ssr
 dist-ts
@@ -27,6 +31,7 @@ dist-ts
 # TypeScript compiled files
 *.js.map
 *.d.ts
+tsconfig.app.tsbuildinfo
 
 # Environment variables
 .env
@@ -34,3 +39,32 @@ dist-ts
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+*.swp
+*.swo
+*~
+
+# Package manager
+.npm
+.yarn-integrity

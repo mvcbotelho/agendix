@@ -8,21 +8,30 @@ import {
   deleteDoc, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp,
-  Timestamp 
+  serverTimestamp
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { 
   Appointment, 
   CreateAppointmentData, 
-  UpdateAppointmentData, 
-  AppointmentFilters,
+  UpdateAppointmentData,
   Service,
   Professional,
-  AppointmentConflict
+  AppointmentFilters,
+  TimeSlot
 } from '@/types/Appointment'
-import { ApiResponse, SuccessResponse, ErrorResponse } from '@/types/Error'
+import { ApiResponse } from '@/types/Error'
+import { createNotFoundError, createInternalError } from '@/types/Error'
+
+// Interface para conflitos de agendamento
+interface AppointmentConflict {
+  message: string
+  appointmentId: string
+  date: string
+  time: string
+  professionalName: string
+  conflictType: string
+}
 
 // Serviços padrão
 const DEFAULT_SERVICES: Service[] = [
@@ -87,13 +96,13 @@ export async function getAppointments(filters?: AppointmentFilters): Promise<Api
     if (error instanceof Error && error.message.includes('index')) {
       return {
         success: false,
-        error: 'Erro de configuração do banco de dados. Entre em contato com o suporte.'
+        error: createInternalError('Erro de configuração do banco de dados. Entre em contato com o suporte.')
       }
     }
     
     return {
       success: false,
-      error: 'Erro ao buscar agendamentos'
+      error: createInternalError('Erro ao buscar agendamentos')
     }
   }
 }
@@ -107,7 +116,7 @@ export async function getAppointment(id: string): Promise<ApiResponse<Appointmen
     if (!appointmentSnap.exists()) {
       return {
         success: false,
-        error: 'Agendamento não encontrado'
+        error: createNotFoundError('Agendamento')
       }
     }
     
@@ -119,7 +128,7 @@ export async function getAppointment(id: string): Promise<ApiResponse<Appointmen
     console.error('Erro ao buscar agendamento:', error)
     return {
       success: false,
-      error: 'Erro ao buscar agendamento'
+      error: createInternalError('Erro ao buscar agendamento')
     }
   }
 }
@@ -135,7 +144,6 @@ function cleanAppointmentData(data: any): any {
   for (const [key, value] of Object.entries(data)) {
     // Pular valores undefined completamente
     if (value === undefined) {
-      console.log(`Removendo campo undefined: ${key}`)
       continue
     }
     
@@ -180,7 +188,7 @@ export async function createAppointment(data: CreateAppointmentData, userId: str
     if (conflicts.length > 0) {
       return {
         success: false,
-        error: conflicts[0].message
+        error: createInternalError(conflicts[0].message)
       }
     }
     
@@ -218,10 +226,6 @@ export async function createAppointment(data: CreateAppointmentData, userId: str
       attendingChildren: cleanAttendingChildren
     })
     
-    // Log para debug
-    console.log('Dados originais:', data)
-    console.log('Dados limpos:', appointmentData)
-    
     // Verificar se ainda há valores undefined
     for (const [key, value] of Object.entries(appointmentData)) {
       if (value === undefined) {
@@ -258,7 +262,7 @@ export async function createAppointment(data: CreateAppointmentData, userId: str
     console.error('Erro ao criar agendamento:', error)
     return {
       success: false,
-      error: 'Erro ao criar agendamento'
+      error: createInternalError('Erro ao criar agendamento')
     }
   }
 }
@@ -284,7 +288,7 @@ export async function updateAppointment(id: string, data: UpdateAppointmentData)
       if (conflicts.length > 0) {
         return {
           success: false,
-          error: conflicts[0].message
+          error: createInternalError(conflicts[0].message)
         }
       }
     }
@@ -330,7 +334,7 @@ export async function updateAppointment(id: string, data: UpdateAppointmentData)
     console.error('Erro ao atualizar agendamento:', error)
     return {
       success: false,
-      error: 'Erro ao atualizar agendamento'
+      error: createInternalError('Erro ao atualizar agendamento')
     }
   }
 }
@@ -347,7 +351,7 @@ export async function deleteAppointment(id: string): Promise<ApiResponse<void>> 
     console.error('Erro ao excluir agendamento:', error)
     return {
       success: false,
-      error: 'Erro ao excluir agendamento'
+      error: createInternalError('Erro ao excluir agendamento')
     }
   }
 }
@@ -383,7 +387,10 @@ async function checkAppointmentConflicts(
         conflicts.push({
           appointmentId: existingAppointment.id,
           conflictType: 'time_overlap',
-          message: `Conflito de horário com agendamento existente (${existingAppointment.time})`
+          message: `Conflito de horário com agendamento existente (${existingAppointment.time})`,
+          date: existingAppointment.date,
+          time: existingAppointment.time,
+          professionalName: existingAppointment.professionalName || ''
         })
       }
     })
@@ -425,7 +432,7 @@ export async function getServices(): Promise<ApiResponse<Service[]>> {
     console.error('Erro ao buscar serviços:', error)
     return {
       success: false,
-      error: 'Erro ao buscar serviços'
+      error: createInternalError('Erro ao buscar serviços')
     }
   }
 }
@@ -443,7 +450,7 @@ export async function getProfessionals(): Promise<ApiResponse<Professional[]>> {
     console.error('Erro ao buscar profissionais:', error)
     return {
       success: false,
-      error: 'Erro ao buscar profissionais'
+      error: createInternalError('Erro ao buscar profissionais')
     }
   }
 }
@@ -502,7 +509,7 @@ export async function getAvailableTimeSlots(
     console.error('Erro ao buscar horários disponíveis:', error)
     return {
       success: false,
-      error: 'Erro ao buscar horários disponíveis'
+      error: createInternalError('Erro ao buscar horários disponíveis')
     }
   }
 } 

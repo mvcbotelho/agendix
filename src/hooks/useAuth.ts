@@ -16,18 +16,63 @@ import {
   createAuthError, 
   createNetworkError, 
   createValidationError,
+  createInternalError,
   ApiResponse,
   SuccessResponse,
   ErrorResponse
 } from '@/types/Error'
+import { Tenant, TenantUser, CreateTenantData } from '@/types/Tenant'
+import { getTenantByUser, createTenant as createTenantService, getTenantUserByUserId } from '@/services/tenantService'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
+  const [tenant, setTenant] = useState<Tenant | null>(null)
+  const [tenantUser, setTenantUser] = useState<TenantUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isTenantLoaded, setIsTenantLoaded] = useState(false)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user)
+      
+      if (user) {
+        // Buscar tenant e tenantUser do usuário
+        try {
+          const [tenantResult, tenantUserResult] = await Promise.all([
+            getTenantByUser(user.uid),
+            getTenantUserByUserId(user.uid)
+          ])
+          
+          if (tenantResult.success) {
+            if (tenantResult.data) {
+              setTenant(tenantResult.data)
+            } else {
+              setTenant(null)
+            }
+          } else {
+            setTenant(null)
+          }
+          
+          if (tenantUserResult.success) {
+            if (tenantUserResult.data) {
+              setTenantUser(tenantUserResult.data)
+            } else {
+              setTenantUser(null)
+            }
+          } else {
+            setTenantUser(null)
+          }
+        } catch (error) {
+          console.error('useAuth: Erro ao buscar tenant/tenantUser:', error)
+          setTenant(null)
+          setTenantUser(null)
+        }
+      } else {
+        setTenant(null)
+        setTenantUser(null)
+      }
+      
+      setIsTenantLoaded(true)
       setLoading(false)
       securityLog('Auth state changed', { userId: user?.uid, email: user?.email })
     })
@@ -75,7 +120,7 @@ export function useAuth() {
       // Reset rate limiter em caso de sucesso
       rateLimiter.reset(identifier)
       
-      securityLog('Login successful', { userId: userCredential.user.uid })
+      securityLog('Login successful', { userId: userCredential.user.uid, email: sanitizedEmail })
       
       return {
         success: true,
@@ -97,8 +142,6 @@ export function useAuth() {
 
   const loginWithGoogle = async (): Promise<ApiResponse<{ user: User }>> => {
     try {
-      securityLog('Google login attempt')
-
       const provider = new GoogleAuthProvider()
       const userCredential = await signInWithPopup(auth, provider)
       
@@ -124,10 +167,7 @@ export function useAuth() {
 
   const logout = async (): Promise<ApiResponse<void>> => {
     try {
-      securityLog('Logout attempt', { userId: user?.uid })
-      
       await signOut(auth)
-      
       securityLog('Logout successful')
       
       return {
@@ -196,13 +236,49 @@ export function useAuth() {
     }
   }
 
+  const createTenant = async (tenantData: CreateTenantData): Promise<ApiResponse<{ tenant: Tenant }>> => {
+    if (!user) {
+      return {
+        success: false,
+        error: createAuthError('Usuário não autenticado')
+      } as ErrorResponse
+    }
+
+    try {
+      const result = await createTenantService(tenantData, user.uid)
+      
+      if (result.success && result.data) {
+        setTenant(result.data)
+        return {
+          success: true,
+          data: { tenant: result.data }
+        } as SuccessResponse<{ tenant: Tenant }>
+      } else {
+        return result as ErrorResponse
+      }
+    } catch (error) {
+      console.error('Erro ao criar tenant:', error)
+      return {
+        success: false,
+        error: createInternalError('Erro ao criar tenant', error)
+      } as ErrorResponse
+    }
+  }
+
+  
   return {
     user,
+    tenant,
+    tenantUser,
     loading,
+    isAuthenticated: !!user,
+    isTenantLoaded,
+    hasTenant: !!tenant,
+    hasTenantUser: !!tenantUser,
     login,
     loginWithGoogle,
     logout,
     resetPassword,
-    isAuthenticated: !!user
+    createTenant
   }
 } 

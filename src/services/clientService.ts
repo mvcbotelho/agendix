@@ -37,6 +37,7 @@ function firestoreToClient(doc: DocumentSnapshot<DocumentData>): Client {
   
   return {
     id: doc.id,
+    tenantId: (data.tenantId as string) || '',
     name: data.name,
     email: data.email,
     phone: data.phone,
@@ -52,7 +53,7 @@ function firestoreToClient(doc: DocumentSnapshot<DocumentData>): Client {
 }
 
 // Converter Client para dados do Firestore
-function clientToFirestore(client: CreateClientData | UpdateClientData, userId?: string): Record<string, unknown> {
+function clientToFirestore(client: CreateClientData | UpdateClientData, userId?: string, tenantId?: string): Record<string, unknown> {
   const data: Record<string, unknown> = {
     name: client.name,
     email: client.email,
@@ -60,9 +61,13 @@ function clientToFirestore(client: CreateClientData | UpdateClientData, userId?:
     updatedAt: serverTimestamp(),
   }
 
-  // Adicionar userId se fornecido (apenas para criação)
+  // Adicionar userId e tenantId se fornecidos (apenas para criação)
   if (userId) {
     data.userId = userId
+  }
+  
+  if (tenantId) {
+    data.tenantId = tenantId
   }
 
   if (client.cpf !== undefined) data.cpf = client.cpf
@@ -95,18 +100,34 @@ function validateClientData(data: CreateClientData | UpdateClientData): void {
 }
 
 // Buscar todos os clientes
-export async function getClients(userId?: string): Promise<ApiResponse<Client[]>> {
+export async function getClients(userId?: string, tenantId?: string): Promise<ApiResponse<Client[]>> {
   try {
     let q
     
-    if (userId) {
-      // Buscar apenas clientes do usuário específico (sem ordenação no servidor)
+    // Sempre filtrar por tenantId se fornecido
+    if (tenantId) {
+      if (userId) {
+        // Buscar apenas clientes do usuário e tenant específicos
+        q = query(
+          collection(db, COLLECTION_NAME),
+          where('userId', '==', userId),
+          where('tenantId', '==', tenantId)
+        )
+      } else {
+        // Buscar apenas clientes do tenant específico
+        q = query(
+          collection(db, COLLECTION_NAME),
+          where('tenantId', '==', tenantId)
+        )
+      }
+    } else if (userId) {
+      // Buscar apenas clientes do usuário específico (sem tenant)
       q = query(
         collection(db, COLLECTION_NAME),
         where('userId', '==', userId)
       )
     } else {
-      // Buscar todos os clientes (sem filtro de usuário)
+      // Buscar todos os clientes (sem filtro) - apenas para admin
       q = query(
         collection(db, COLLECTION_NAME)
       )
@@ -187,13 +208,13 @@ export async function getClient(id: string): Promise<ApiResponse<Client>> {
 }
 
 // Criar novo cliente
-export async function createClient(clientData: CreateClientData, userId?: string): Promise<ApiResponse<Client>> {
+export async function createClient(clientData: CreateClientData, userId?: string, tenantId?: string): Promise<ApiResponse<Client>> {
   try {
     // Validar dados
     validateClientData(clientData)
     
     const data = {
-      ...clientToFirestore(clientData, userId),
+      ...clientToFirestore(clientData, userId, tenantId),
       createdAt: serverTimestamp(),
     }
     
