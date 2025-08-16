@@ -359,6 +359,12 @@ agendix/
 - **Índices**: Otimização de consultas
 - **Backup**: Backup automático do Firebase
 
+### **Firebase Cloud Functions**
+- **Operações administrativas**: Executadas no backend
+- **Admin SDK**: Credenciais seguras no servidor
+- **Validação**: Permissões verificadas em todas as operações
+- **Deploy**: `firebase deploy --only functions`
+
 ## 📈 Performance
 
 ### **Otimizações**
