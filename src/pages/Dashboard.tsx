@@ -13,11 +13,14 @@ import {
   HStack,
   Icon,
   useToast,
+  Spinner,
+  Center,
 } from "@chakra-ui/react"
 
 import { Client } from "@/types/Client"
 import { Appointment } from "@/types/Appointment"
-import { useAuthContext } from "@/hooks/useAuthContext"
+import { useAuth } from "@/hooks/useAuth"
+import { usePermissions } from "@/hooks/usePermissions"
 import { Menu } from "@/components/Menu"
 import { getAppointments } from "@/services/appointmentService"
 import { getClients } from "@/services/clientService"
@@ -84,7 +87,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   
   const toast = useToast()
-  const { user } = useAuthContext()
+  const { user, tenant } = useAuth()
   
   const cardBg = useColorModeValue("white", "gray.800")
   const borderColor = useColorModeValue("gray.200", "gray.700")
@@ -185,6 +188,22 @@ export default function Dashboard() {
   }, [user, fetchStats])
 
 
+
+  // Se ainda está carregando, mostrar loading
+  if (isLoading) {
+    return (
+      <Menu>
+        <Container maxW="7xl" py={8}>
+          <Center h="400px">
+            <VStack spacing={4}>
+              <Spinner size="xl" />
+              <Text>Carregando dashboard...</Text>
+            </VStack>
+          </Center>
+        </Container>
+      </Menu>
+    )
+  }
 
   return (
     <Menu>
@@ -319,7 +338,7 @@ export default function Dashboard() {
                 </Stat>
               </Box>
 
-                             <Box
+              <Box
                 bg={cardBg}
                 p={6}
                 borderRadius="lg"
@@ -412,8 +431,6 @@ export default function Dashboard() {
               </Box>
             </SimpleGrid>
           </Box>
-
-          
         </VStack>
       </Container>
     </Menu>

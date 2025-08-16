@@ -18,6 +18,7 @@ import { Menu } from '@/components/Menu'
 import { getClients, createClient, updateClient, deleteClient } from '@/services/clientService'
 import { isSuccessResponse, isErrorResponse } from '@/types/Error'
 import { useAuthContext } from '@/hooks/useAuthContext'
+import { useTenant } from '@/hooks/useTenant'
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([])
@@ -29,11 +30,12 @@ export default function Clients() {
   const [clientToView, setClientToView] = useState<Client | null>(null)
   const toast = useToast()
   const { user } = useAuthContext()
+  const { tenantId } = useTenant()
 
 
   const loadClients = useCallback(async () => {
     try {
-      const result = await getClients(user?.uid)
+      const result = await getClients(user?.uid, tenantId)
       
       if (isSuccessResponse(result)) {
         setClients(result.data)
@@ -55,7 +57,7 @@ export default function Clients() {
         isClosable: true,
       })
     }
-  }, [toast, user?.uid])
+  }, [toast, user?.uid, tenantId])
 
   // Carregar clientes do Firebase
   useEffect(() => {

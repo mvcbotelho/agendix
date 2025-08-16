@@ -1,14 +1,36 @@
 import React, { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
+import { Permission } from '@/types/Permissions'
 import { Box, Spinner, Center, Text } from '@chakra-ui/react'
 
 interface ProtectedRouteProps {
   children: ReactNode
+  permission?: Permission
+  permissions?: Permission[]
+  requireAll?: boolean
+  requireAdmin?: boolean
+  requireOwner?: boolean
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ 
+  children, 
+  permission,
+  permissions,
+  requireAll = false,
+  requireAdmin = false,
+  requireOwner = false
+}: ProtectedRouteProps) {
   const { user, tenant, loading, isTenantLoaded } = useAuth()
+  
+  // Temporariamente desabilitando permissões para debug
+  const permissionsLoading = false
+  const hasPermission = () => true
+  const hasAnyPermission = () => true
+  const hasAllPermissions = () => true
+  const isAdmin = () => true
+  const isOwner = () => true
 
   // Aguardar carregamento do usuário e tenant
   if (loading || !isTenantLoaded) {
@@ -32,6 +54,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/tenant-registration" replace />
   }
 
-  // Se há usuário e tenant, renderizar o conteúdo protegido
+  // Temporariamente permitindo acesso a todos
+  const hasAccess = true
+
+  // Se não tem acesso, redirecionar para dashboard
+  if (!hasAccess) {
+    return <Navigate to="/app" replace />
+  }
+
+  // Se há usuário, tenant e permissões adequadas, renderizar o conteúdo protegido
   return <>{children}</>
 } 

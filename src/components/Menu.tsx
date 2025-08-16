@@ -23,7 +23,7 @@ import {
   ChevronDownIcon,
 } from '@chakra-ui/icons'
 import { useNavigate } from 'react-router-dom'
-import { useAuthContext } from '@/hooks/useAuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { Logo } from './Logo'
 
 interface MenuProps {
@@ -34,7 +34,7 @@ export function Menu({ children }: MenuProps) {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { colorMode, toggleColorMode } = useColorMode()
   const navigate = useNavigate()
-  const { user, logout } = useAuthContext()
+  const { user, logout } = useAuth()
   const toast = useToast()
 
   const bg = useColorModeValue('white', 'gray.800')
@@ -80,6 +80,11 @@ export function Menu({ children }: MenuProps) {
     { name: 'Agendamentos', href: '/app/appointments' },
   ]
 
+  const adminMenuItems = [
+    { name: 'Painel Admin', href: '/admin' },
+    { name: 'Usuários', href: '/users' },
+  ]
+
   return (
     <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')}>
       <Box bg={bg} px={4} shadow="sm" borderBottom="1px" borderColor={borderColor}>
@@ -111,6 +116,20 @@ export function Menu({ children }: MenuProps) {
                   _hover={{
                     bg: hoverBg,
                   }}
+                >
+                  {item.name}
+                </Button>
+              ))}
+              {adminMenuItems.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="ghost"
+                  onClick={() => navigate(item.href)}
+                  color={color}
+                  _hover={{
+                    bg: hoverBg,
+                  }}
+                  colorScheme="purple"
                 >
                   {item.name}
                 </Button>
@@ -151,6 +170,10 @@ export function Menu({ children }: MenuProps) {
                   Agendamentos
                 </MenuItem>
                 <MenuDivider />
+                <MenuItem onClick={() => navigate('/admin')}>
+                  Painel Admin
+                </MenuItem>
+                <MenuDivider />
                 <MenuItem onClick={handleLogout}>
                   Sair
                 </MenuItem>
@@ -174,6 +197,23 @@ export function Menu({ children }: MenuProps) {
                   _hover={{
                     bg: hoverBg,
                   }}
+                >
+                  {item.name}
+                </Button>
+              ))}
+              {adminMenuItems.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="ghost"
+                  onClick={() => {
+                    navigate(item.href)
+                    onClose()
+                  }}
+                  color={color}
+                  _hover={{
+                    bg: hoverBg,
+                  }}
+                  colorScheme="purple"
                 >
                   {item.name}
                 </Button>
