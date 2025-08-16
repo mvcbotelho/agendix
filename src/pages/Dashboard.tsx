@@ -65,6 +65,14 @@ const CancelIcon = () => (
   </Icon>
 )
 
+/**
+ * Dashboard component that displays client and appointment statistics.
+ *
+ * Renders a responsive set of statistic cards (clients, appointments, and period-based appointment counts),
+ * shows a centered loading screen while data is being fetched, and updates counts when the authenticated
+ * user is available. Data is retrieved from the clients and appointments services; errors during fetch
+ * produce an error toast notification.
+ */
 export default function Dashboard() {
   const [stats, setStats] = useState({
     // Estatísticas de Clientes

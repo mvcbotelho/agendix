@@ -261,7 +261,15 @@ export const inviteUser = onCall(
   }
 );
 
-// Função auxiliar para obter permissões baseadas no role
+/**
+ * Return the list of permissions associated with a tenant role.
+ *
+ * Looks up a predefined mapping of role names to permission strings and returns
+ * the corresponding array. If the role is not recognized, returns an empty array.
+ *
+ * @param role - Role name (e.g., "owner", "admin", "manager", "staff", "viewer")
+ * @returns Array of permission identifiers for the given role, or [] if unknown
+ */
 function getRolePermissions(role: string): string[] {
   const rolePermissions: Record<string, string[]> = {
     owner: ['*'],

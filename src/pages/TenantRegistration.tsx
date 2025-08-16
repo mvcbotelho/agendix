@@ -25,6 +25,18 @@ import { CreateTenantData } from '@/types/Tenant'
 import { getAddressByCep } from '@/services/cepService'
 import { formatCEP } from '@/utils/formatters'
 
+/**
+ * Tenant registration page component.
+ *
+ * Renders a gated company registration form for an authenticated user. The form collects basic company info (name, email, phone, optional CNPJ) and optional address fields (CEP, street, number, complement, neighborhood, city, state). CEP input triggers an automatic address lookup that can auto-fill address fields. The component validates required fields (including phone and CEP formats), shows inline field errors, and submits the collected data to the tenant creation service. On successful creation it navigates to "/app"; if the user is not authenticated it redirects to "/".
+ *
+ * Side effects:
+ * - Uses authentication state to gate access and may redirect to the root path when unauthenticated.
+ * - Calls an address lookup service when a valid 8-digit CEP is entered and populates address fields on success.
+ * - Calls the tenant creation service on form submit and shows success or error toasts.
+ *
+ * @returns The rendered JSX element for the tenant registration page.
+ */
 export default function TenantRegistration() {
   const navigate = useNavigate()
   const { user, loading } = useAuth()

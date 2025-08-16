@@ -18,6 +18,29 @@ import {
 import { isSuccessResponse } from '@/types/Error'
 import { initializeUserPermissions } from '@/utils/initializePermissions'
 
+/**
+ * React hook that manages and checks per-tenant user permissions.
+ *
+ * Loads the current user's permissions for the active tenant, offers actions to create/update permissions,
+ * synchronous checks (hasPermission, hasAnyPermission, hasAllPermissions), asynchronous server-backed checks
+ * (checkPermission, checkAnyPermission, checkAllPermissions), and helpers for role information and role checks.
+ *
+ * The hook automatically attempts to initialize permissions when none are found and the tenantUser has OWNER or ADMIN role.
+ * It exposes loading and error state for UI feedback.
+ *
+ * @returns An object with:
+ *  - userPermissions: Current UserPermissions or null
+ *  - isLoading: Whether permissions are being loaded
+ *  - error: Error message or null
+ *  - loadUserPermissions: Async function to reload permissions
+ *  - createPermissions: Async function to create permissions for a user
+ *  - updatePermissions: Async function to update a user's permissions
+ *  - hasPermission, hasAnyPermission, hasAllPermissions: Synchronous local checks (support wildcard `*`)
+ *  - checkPermission, checkAnyPermission, checkAllPermissions: Async server checks
+ *  - getCurrentRolePermissions: Returns permissions for the current role
+ *  - getCurrentRoleDescription: Returns the description for the current role
+ *  - isOwner, isAdmin, isManagerOrHigher, isStaffOrHigher: Boolean role checks
+ */
 export function usePermissions() {
   const { user, tenant, tenantUser } = useAuth()
   const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null)

@@ -26,6 +26,17 @@ interface InviteUserModalProps {
   onSuccess?: () => void
 }
 
+/**
+ * Modal for inviting a user to the current tenant.
+ *
+ * Renders a form with email, display name, and role fields and submits an invitation using the tenant context.
+ * Validates required fields and tenant presence, shows success/error toasts, resets the form on success, closes the modal,
+ * and optionally calls an `onSuccess` callback when the invite succeeds.
+ *
+ * @param isOpen - Whether the modal is open.
+ * @param onClose - Callback invoked to close the modal. The component will reset its form before calling this.
+ * @param onSuccess - Optional callback invoked after a successful invite.
+ */
 export function InviteUserModal({ isOpen, onClose, onSuccess }: InviteUserModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({

@@ -65,6 +65,21 @@ interface TenantStats {
   }
 }
 
+/**
+ * Admin dashboard page that lists and manages tenants.
+ *
+ * Renders a dashboard with tenant statistics, a searchable/filterable tenant table,
+ * and controls to update tenant status or open an edit modal. On mount it loads
+ * tenants from the API, computes aggregate statistics (total, counts by status and plan),
+ * and keeps a filtered view in sync with search, status and plan filters.
+ *
+ * Side effects:
+ * - Fetches tenant data from the backend on mount and when explicitly refreshed.
+ * - Calls the tenant update service to change status or save edits.
+ * - Displays success/error toasts for API operations.
+ *
+ * @returns The dashboard React element.
+ */
 export default function AdminDashboard() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [filteredTenants, setFilteredTenants] = useState<Tenant[]>([])
@@ -487,6 +502,18 @@ interface TenantEditModalProps {
   onUpdate: () => void
 }
 
+/**
+ * Modal dialog that allows editing a tenant's basic information (name, email, phone, CNPJ), plan, and status.
+ *
+ * The form is pre-filled from `tenant`. On save it calls the `updateTenant` service, shows success or error toasts,
+ * invokes `onUpdate()` after a successful update to let the parent refresh data, and then closes the modal via `onClose()`.
+ * Validation is limited to what the inputs provide; API errors are surfaced in toasts.
+ *
+ * @param tenant - Tenant object used to populate the form fields.
+ * @param isOpen - Controls whether the modal is visible.
+ * @param onClose - Callback invoked to close the modal.
+ * @param onUpdate - Callback invoked after a successful update so the parent can refresh its data.
+ */
 function TenantEditModal({ tenant, isOpen, onClose, onUpdate }: TenantEditModalProps) {
   const [formData, setFormData] = useState({
     name: tenant.name,

@@ -19,7 +19,21 @@ import {
 import { ArrowBackIcon, EmailIcon } from "@chakra-ui/icons"
 import { useNavigate } from "react-router-dom"
 import { useAuthContext } from "@/hooks/useAuthContext"
-// import { resetPasswordSchema } from "@/types/validation"
+/**
+ * ForgotPassword React component that renders a "forgot password" form and success state.
+ *
+ * Renders an email input and submit button to request a password reset. On submit it validates
+ * the form (client-side validation is currently disabled), calls the `resetPassword` function
+ * from the authentication context, and shows success or error toasts. After a successful
+ * request the component displays a confirmation view with options to resend or go back to login.
+ *
+ * Side effects:
+ * - Calls `resetPassword(email)` from the auth context.
+ * - Shows toast notifications for success, error, or unexpected failures.
+ * - Navigates to the login route when the back action is triggered.
+ *
+ * @returns The JSX element for the forgot-password page.
+ */
 
 
 export default function ForgotPassword() {

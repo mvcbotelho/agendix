@@ -16,7 +16,13 @@ import {
 import { useNavigate } from "react-router-dom"
 import { useAuthContext } from "@/hooks/useAuthContext"
 import { LogoXLarge } from "@/components/Logo"
-// import { loginSchema } from "@/types/validation"
+/**
+ * Renders the login page UI and manages authentication flows (email/password and Google).
+ *
+ * The component maintains local form state, field-level errors, and a loading flag. On submit it validates the form (note: the schema-based validation is currently disabled), calls the authentication functions from the auth context, displays success/error toasts, and navigates to "/app" on successful sign-in. Errors returned by the auth calls are shown in toasts; unexpected exceptions render a generic error toast. Loading state is managed and reset for both authentication flows.
+ *
+ * @returns The login page React element.
+ */
 
 
 export default function Login() {

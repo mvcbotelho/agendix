@@ -42,6 +42,29 @@ interface AppointmentFormProps {
   isLoading?: boolean
 }
 
+/**
+ * Form component for creating or editing an appointment.
+ *
+ * Renders a full appointment form (client, service, professional, date/time, duration,
+ * optional children selection and observations). Supports both create and edit modes
+ * via the optional `appointment` prop and communicates results through `onSubmit`
+ * and `onCancel` callbacks.
+ *
+ * Behavior highlights:
+ * - Loads clients, services and professionals on mount.
+ * - Prefills fields when `appointment` is provided; existing attending children are marked selected.
+ * - Refreshes available time slots when date or professional changes.
+ * - Selecting a client auto-populates attendingClients and the client's children (children are selectable).
+ * - Changing service updates the duration field; changing professional updates professionalName.
+ * - Validates required fields (client, service, date, time, duration > 0) before submission.
+ * - On submit, only children with `isSelected === true` are included in the payload passed to `onSubmit`.
+ *
+ * @param appointment - Optional appointment to edit; when provided the form is prefilled.
+ * @param onSubmit - Callback invoked with the cleaned appointment payload when the form is successfully submitted.
+ * @param onCancel - Callback invoked when the user cancels the form.
+ * @param isLoading - Optional boolean to show submit loading state (defaults to false).
+ * @returns The rendered appointment form JSX.
+ */
 export function AppointmentForm({
   appointment,
   onSubmit,

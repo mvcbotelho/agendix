@@ -25,6 +25,20 @@ import { Menu as MenuComponent } from '@/components/Menu'
 import { createTenantUser, getTenantUserByUserId } from '@/services/tenantService'
 import { isSuccessResponse } from '@/types/Error'
 
+/**
+ * Debug UI for inspecting and managing the current user's tenant and permission state.
+ *
+ * Renders user, tenant, TenantUser and user-permissions information with color-coded role/status badges,
+ * a debug panel for raw Firestore responses, and action buttons to:
+ * - initialize permissions (calls initializeUserPermissions and refreshes permissions on success),
+ * - create a TenantUser if none exists (checks via getTenantUserByUserId, creates a temporary TenantUser with Role.ADMIN and reloads the page on success),
+ * - fetch Firestore debug data (populates a JSON debug panel), and
+ * - reload permissions (calls loadUserPermissions).
+ *
+ * The component relies on useAuth for user/tenant/tenantUser and usePermissions for userPermissions and loading state.
+ * While permissions are loading, a centered spinner is shown. Action buttons reflect local loading states and are disabled
+ * when the corresponding preconditions are not met (for example, "Inicializar Permissões" is disabled without a TenantUser).
+ */
 export default function DebugPermissions() {
   const { user, tenant, tenantUser } = useAuth()
   const { userPermissions, isLoading, loadUserPermissions } = usePermissions()

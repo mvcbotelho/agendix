@@ -89,7 +89,17 @@ export const createTenantSchema = tenantSchema.omit({ id: true })
 // Schema para atualização de tenant
 export const updateTenantSchema = tenantSchema.partial()
 
-// Função para converter erros do Zod para formato padronizado
+/**
+ * Convert a ZodError into an array of ValidationError objects.
+ *
+ * Each Zod issue is mapped to a ValidationError with:
+ * - `field`: the error path joined by dots,
+ * - `message`: the Zod issue message,
+ * - `code`: the Zod issue code.
+ *
+ * @param zodError - The ZodError instance to convert.
+ * @returns An array of ValidationError objects representing the Zod issues.
+ */
 export function formatZodErrors(zodError: z.ZodError): ValidationError[] {
   return zodError.errors.map(error => ({
     field: error.path.join('.'),
@@ -98,7 +108,19 @@ export function formatZodErrors(zodError: z.ZodError): ValidationError[] {
   }))
 }
 
-// Função para validar dados usando um schema
+/**
+ * Validate arbitrary data against a Zod schema and return a typed result or formatted errors.
+ *
+ * Attempts to parse `data` with the provided Zod `schema`. On success returns `{ success: true, data }`
+ * where `data` is the parsed and typed value. If validation fails with a ZodError, returns
+ * `{ success: false, errors }` where `errors` is an array of `ValidationError` produced by
+ * `formatZodErrors`. If an unexpected (non-Zod) error occurs, returns a single `ValidationError`
+ * with `field: 'unknown'` and `code: 'UNKNOWN'`.
+ *
+ * @param schema - Zod schema used to validate and parse the input
+ * @param data - The value to validate (typically unknown/raw input)
+ * @returns On success: `{ success: true; data: T }`. On failure: `{ success: false; errors: ValidationError[] }`.
+ */
 export function validateWithSchema<T>(
   schema: z.ZodSchema<T>,
   data: unknown

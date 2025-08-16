@@ -14,6 +14,26 @@ interface ProtectedRouteProps {
   requireOwner?: boolean
 }
 
+/**
+ * Wraps route content and enforces authentication, tenant presence, and optional permission checks.
+ *
+ * Waits for auth and tenant readiness and shows a fullscreen loading UI while loading.
+ * After loading:
+ * - Redirects to `/` when no authenticated user is present.
+ * - Redirects to `/tenant-registration` when a user exists but no tenant is associated.
+ * - Redirects to `/app` when access is denied.
+ *
+ * Permission checks are currently stubbed/disabled (temporarily permissive); when enabled the
+ * `permission`/`permissions` and `requireAll`/`requireAdmin`/`requireOwner` flags control access.
+ *
+ * @param children - The protected content to render when access is granted.
+ * @param permission - Single required permission (optional).
+ * @param permissions - Multiple required permissions (optional).
+ * @param requireAll - If true, all `permissions` must be present; otherwise any suffices. Defaults to `false`.
+ * @param requireAdmin - If true, requires the user to have admin role. Defaults to `false`.
+ * @param requireOwner - If true, requires the user to be the tenant owner. Defaults to `false`.
+ * @returns The protected children when checks pass, or a <Navigate/> redirect component when not.
+ */
 export function ProtectedRoute({ 
   children, 
   permission,

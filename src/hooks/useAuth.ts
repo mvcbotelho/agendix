@@ -24,6 +24,33 @@ import {
 import { Tenant, TenantUser, CreateTenantData } from '@/types/Tenant'
 import { getTenantByUser, createTenant as createTenantService, getTenantUserByUserId } from '@/services/tenantService'
 
+/**
+ * React hook that manages authentication state and tenant context using Firebase.
+ *
+ * Subscribes to Firebase auth state changes, keeps the current Firebase `user` and derived flags,
+ * and when authenticated concurrently loads the associated `tenant` and `tenantUser`. Exposes
+ * helpers to sign in (email/password and Google), sign out, request a password reset, and create a tenant.
+ *
+ * The hook sets `isTenantLoaded` after attempting to load tenant-related data (success or failure).
+ * On sign-in/sign-out the auth listener updates `user`, clears or populates `tenant`/`tenantUser`, and
+ * updates `loading` accordingly.
+ *
+ * @returns An object containing:
+ *  - user: The current Firebase `User` or `null`.
+ *  - tenant: The current `Tenant` associated with the user, or `null`.
+ *  - tenantUser: The `TenantUser` mapping for the current user, or `null`.
+ *  - loading: `true` while the initial auth/tenant load is in progress.
+ *  - isAuthenticated: `true` when `user` is non-null.
+ *  - isTenantLoaded: `true` once tenant-related data has finished loading after an auth state change.
+ *  - hasTenant: `true` when `tenant` is non-null.
+ *  - hasTenantUser: `true` when `tenantUser` is non-null.
+ *  - login(email, password): Attempts email/password sign-in. Returns an `ApiResponse` with the signed `user` on success.
+ *  - loginWithGoogle(): Attempts Google sign-in via popup. Returns an `ApiResponse` with the signed `user` on success.
+ *  - logout(): Signs out the current user. Returns an `ApiResponse<void>`.
+ *  - resetPassword(email): Sends a password reset email. Returns an `ApiResponse<void>`.
+ *  - createTenant(tenantData): Creates a tenant for the authenticated user and updates local tenant state.
+ *    Returns an `ApiResponse` with the created `tenant` on success.
+ */
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
   const [tenant, setTenant] = useState<Tenant | null>(null)
