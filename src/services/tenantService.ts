@@ -143,12 +143,12 @@ export const createTenant = async (
     const tenantDoc = await addDoc(tenantRef, tenantFirestoreData)
     
     // Criar usuário do tenant
-    // const tenantUserResult = await createTenantUser({
-    //   tenantId: tenantDoc.id,
-    //   userId,
-    //   role: 'owner',
-    //   permissions: ['*'], // Owner tem todas as permissões
-    // })
+    const tenantUserResult = await createTenantUser({
+      tenantId: tenantDoc.id,
+      userId,
+      role: 'owner',
+      permissions: ['*'], // Owner tem todas as permissões
+    })
         
     const newTenant = await getTenantById(tenantDoc.id)
     
@@ -288,6 +288,46 @@ export const getTenantUserById = async (tenantUserId: string): Promise<ApiRespon
       } as ErrorResponse
     }
     
+    const data = tenantUserDoc.data()
+    const tenantUser: TenantUser = {
+      id: tenantUserDoc.id,
+      tenantId: data.tenantId,
+      userId: data.userId,
+      role: data.role,
+      permissions: data.permissions || [],
+      isActive: data.isActive,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    }
+    
+    return {
+      success: true,
+      data: tenantUser,
+    } as SuccessResponse<TenantUser>
+  } catch (error) {
+    console.error('Erro ao buscar usuário do tenant:', error)
+    return {
+      success: false,
+      error: createInternalError('Erro ao buscar usuário do tenant', error),
+    } as ErrorResponse
+  }
+}
+
+// Buscar TenantUser por userId
+export const getTenantUserByUserId = async (userId: string): Promise<ApiResponse<TenantUser | null>> => {
+  try {
+    const tenantUsersRef = collection(db, 'tenantUsers')
+    const q = query(tenantUsersRef, where('userId', '==', userId))
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      return {
+        success: true,
+        data: null,
+      } as SuccessResponse<null>
+    }
+    
+    const tenantUserDoc = querySnapshot.docs[0]
     const data = tenantUserDoc.data()
     const tenantUser: TenantUser = {
       id: tenantUserDoc.id,

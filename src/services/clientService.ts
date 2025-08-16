@@ -104,27 +104,30 @@ export async function getClients(userId?: string, tenantId?: string): Promise<Ap
   try {
     let q
     
-    if (userId && tenantId) {
-      // Buscar apenas clientes do usuário e tenant específicos
-      q = query(
-        collection(db, COLLECTION_NAME),
-        where('userId', '==', userId),
-        where('tenantId', '==', tenantId)
-      )
+    // Sempre filtrar por tenantId se fornecido
+    if (tenantId) {
+      if (userId) {
+        // Buscar apenas clientes do usuário e tenant específicos
+        q = query(
+          collection(db, COLLECTION_NAME),
+          where('userId', '==', userId),
+          where('tenantId', '==', tenantId)
+        )
+      } else {
+        // Buscar apenas clientes do tenant específico
+        q = query(
+          collection(db, COLLECTION_NAME),
+          where('tenantId', '==', tenantId)
+        )
+      }
     } else if (userId) {
-      // Buscar apenas clientes do usuário específico
+      // Buscar apenas clientes do usuário específico (sem tenant)
       q = query(
         collection(db, COLLECTION_NAME),
         where('userId', '==', userId)
       )
-    } else if (tenantId) {
-      // Buscar apenas clientes do tenant específico
-      q = query(
-        collection(db, COLLECTION_NAME),
-        where('tenantId', '==', tenantId)
-      )
     } else {
-      // Buscar todos os clientes (sem filtro)
+      // Buscar todos os clientes (sem filtro) - apenas para admin
       q = query(
         collection(db, COLLECTION_NAME)
       )

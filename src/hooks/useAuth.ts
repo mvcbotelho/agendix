@@ -22,13 +22,11 @@ import {
   ErrorResponse
 } from '@/types/Error'
 import { Tenant, TenantUser, CreateTenantData } from '@/types/Tenant'
-import { getTenantByUser, createTenant as createTenantService } from '@/services/tenantService'
+import { getTenantByUser, createTenant as createTenantService, getTenantUserByUserId } from '@/services/tenantService'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tenant, setTenant] = useState<Tenant | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tenantUser, setTenantUser] = useState<TenantUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [isTenantLoaded, setIsTenantLoaded] = useState(false)
@@ -38,9 +36,12 @@ export function useAuth() {
       setUser(user)
       
       if (user) {
-        // Buscar tenant do usuário
+        // Buscar tenant e tenantUser do usuário
         try {
-          const tenantResult = await getTenantByUser(user.uid)
+          const [tenantResult, tenantUserResult] = await Promise.all([
+            getTenantByUser(user.uid),
+            getTenantUserByUserId(user.uid)
+          ])
           
           if (tenantResult.success) {
             if (tenantResult.data) {
@@ -51,9 +52,20 @@ export function useAuth() {
           } else {
             setTenant(null)
           }
+          
+          if (tenantUserResult.success) {
+            if (tenantUserResult.data) {
+              setTenantUser(tenantUserResult.data)
+            } else {
+              setTenantUser(null)
+            }
+          } else {
+            setTenantUser(null)
+          }
         } catch (error) {
-          console.error('useAuth: Erro ao buscar tenant:', error)
+          console.error('useAuth: Erro ao buscar tenant/tenantUser:', error)
           setTenant(null)
+          setTenantUser(null)
         }
       } else {
         setTenant(null)
@@ -261,6 +273,8 @@ export function useAuth() {
     loading,
     isAuthenticated: !!user,
     isTenantLoaded,
+    hasTenant: !!tenant,
+    hasTenantUser: !!tenantUser,
     login,
     loginWithGoogle,
     logout,

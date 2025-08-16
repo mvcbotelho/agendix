@@ -1,5 +1,3 @@
-// Temporariamente comentado para resolver erros de compilação
-/*
 import { z } from 'zod'
 import { ValidationError } from '@/types/Error'
 
@@ -117,5 +115,4 @@ export function validateWithSchema<T>(
       errors: [{ field: 'unknown', message: 'Erro de validação desconhecido', code: 'UNKNOWN' }] 
     }
   }
-}
-*/ 
+} 
