@@ -102,7 +102,7 @@ export function InviteUserModal({ isOpen, onClose, onSuccess }: InviteUserModalP
           isClosable: true,
         })
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Erro',
         description: 'Erro ao convidar usuário',

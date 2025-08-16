@@ -64,7 +64,7 @@ export function usePermissions() {
           setUserPermissions(null)
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Erro ao carregar permissões')
       setUserPermissions(null)
     } finally {
